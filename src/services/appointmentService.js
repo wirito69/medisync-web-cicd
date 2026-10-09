@@ -61,10 +61,12 @@ class AppointmentService {
       throw new Error("La fecha y hora proporcionada no es válida.");
     }
 
-    const now = new Date();
-    if (appointmentDate <= now) {
-      throw new Error("La fecha de la cita médica debe ser futura.");
-    }
+    // [ERROR INTENCIONAL PARA DEMO CI/CD]
+    // Se comenta la validación de fecha futura:
+    // const now = new Date();
+    // if (appointmentDate <= now) {
+    //   throw new Error("La fecha de la cita médica debe ser futura.");
+    // }
 
     // Regla 4: Disponibilidad del médico (sin cruce de horarios exactos)
     const doctorConflict = this.appointments.find(

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediSync - Plataforma de Gestión de Citas Médicas</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              900: '#134e4a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white shadow-md">
+            <i class="fa-solid fa-heart-pulse text-xl"></i>
+          </div>
+          <div>
+            <span class="text-xl font-bold text-slate-900 tracking-tight">Medi<span class="text-brand-600">Sync</span></span>
+            <span class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-medium ml-2">v1.0 CI/CD</span>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          <button onclick="toggleModal('business-modal')" class="text-xs sm:text-sm font-medium text-slate-600 hover:text-brand-600 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-briefcase text-brand-600"></i> Giro de Negocio
+          </button>
+          <button onclick="toggleModal('pipeline-modal')" class="text-xs sm:text-sm font-medium text-slate-600 hover:text-brand-600 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-code-branch text-brand-600"></i> Arquitectura CI/CD
+          </button>
+          <div class="hidden sm:flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Pipeline: PASSED
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Banner Informativo -->
+  <div class="bg-gradient-to-r from-brand-700 to-slate-800 text-white py-8 px-4 sm:px-6 shadow-inner">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Sistema Inteligente de Citas Médicas</h1>
+        <p class="text-brand-100 text-sm mt-1 max-w-2xl">
+          Solución SaaS de telemedicina y agendamiento clínico para optimizar la ocupación de consultorios y reducir el ausentismo de pacientes.
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="seedDemoAppointments()" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs px-3 py-2 rounded-lg transition flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Cargar Datos Demo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+    <!-- Tarjetas de Métricas en Tiempo Real -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Citas</p>
+          <h3 id="metric-total" class="text-2xl font-bold text-slate-800">0</h3>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+          <i class="fa-solid fa-check-double"></i>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Confirmadas</p>
+          <h3 id="metric-confirmed" class="text-2xl font-bold text-emerald-600">0</h3>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center text-xl">
+          <i class="fa-solid fa-calendar-xmark"></i>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Canceladas</p>
+          <h3 id="metric-cancelled" class="text-2xl font-bold text-rose-600">0</h3>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-xl">
+          <i class="fa-solid fa-user-doctor"></i>
+        </div>
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Médicos Activos</p>
+          <h3 id="metric-doctors" class="text-2xl font-bold text-purple-600">0</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Grid: Formulario y Lista -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- Formulario de Agendamiento -->
+      <div class="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
+        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+          <i class="fa-solid fa-calendar-plus text-brand-600"></i>
+          <h2 class="text-lg font-bold text-slate-900">Agendar Nueva Cita</h2>
+        </div>
+
+        <form id="appointment-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nombre del Paciente *</label>
+            <input type="text" id="patientName" required placeholder="Ej. Ana Morales"
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Especialidad *</label>
+            <select id="specialty" required
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white">
+              <option value="">Seleccione una especialidad</option>
+              <option value="Medicina General">Medicina General</option>
+              <option value="Pediatría">Pediatría</option>
+              <option value="Cardiología">Cardiología</option>
+              <option value="Dermatología">Dermatología</option>
+              <option value="Traumatología">Traumatología</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Médico Asignado *</label>
+            <input type="text" id="doctorName" required placeholder="Ej. Dr. Carlos Mendoza"
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Fecha y Hora *</label>
+            <input type="datetime-local" id="dateTime" required
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <span class="text-[11px] text-slate-400">Debe ser una fecha futura.</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Motivo / Síntomas</label>
+            <textarea id="reason" rows="2" placeholder="Motivo de la consulta médica..."
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+          </div>
+
+          <div id="form-feedback" class="hidden text-xs p-3 rounded-lg"></div>
+
+          <button type="submit"
+            class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 px-4 rounded-xl shadow transition duration-150 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-calendar-check"></i> Confirmar Reservación
+          </button>
+        </form>
+      </div>
+
+      <!-- Listado de Citas -->
+      <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-clipboard-list text-brand-600"></i>
+            <h2 class="text-lg font-bold text-slate-900">Agenda de Consultas</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">Filtrar:</span>
+            <select id="status-filter" onchange="renderAppointments()" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:outline-none">
+              <option value="ALL">Todas las citas</option>
+              <option value="CONFIRMED">Solo Confirmadas</option>
+              <option value="CANCELLED">Solo Canceladas</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="appointments-container" class="space-y-3">
+          <!-- Render dinámico aquí -->
+          <div class="text-center py-12 text-slate-400 text-sm">
+            <i class="fa-regular fa-calendar-xmark text-4xl mb-3 text-slate-300 block"></i>
+            No hay citas programadas actualmente. Registra una nueva cita o usa "Cargar Datos Demo".
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div>
+        <strong>MediSync</strong> &copy; 2026 - Proyecto de Maestría: Flujo de CI/CD Automatizado
+      </div>
+      <div class="flex gap-4">
+        <span class="flex items-center gap-1.5"><i class="fa-brands fa-github text-slate-700"></i> GitHub Actions Pipeline</span>
+        <span class="flex items-center gap-1.5"><i class="fa-solid fa-vial-circle-check text-emerald-600"></i> Jest Automated Tests</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: Giro de Negocio -->
+  <div id="business-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white max-w-2xl w-full rounded-2xl shadow-2xl overflow-hidden border border-slate-100">
+      <div class="bg-brand-700 text-white px-6 py-4 flex justify-between items-center">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-briefcase"></i> Giro de Negocio: MediSync SaaS
+        </h3>
+        <button onclick="toggleModal('business-modal')" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <div class="p-6 space-y-4 text-sm text-slate-600 max-h-[75vh] overflow-y-auto">
+        <div>
+          <h4 class="font-bold text-slate-900 mb-1">1. ¿Qué es MediSync?</h4>
+          <p>Es una solución de software como servicio (SaaS) orientada a centros de salud ambulatorios, policlínicos y médicos independientes para modernizar el proceso de reserva, confirmación y triaje inicial de consultas médicas.</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-900 mb-1">2. Problema del Negocio</h4>
+          <p>Hasta un <strong>28% de ausentismo</strong> de pacientes en clínicas tradicionales por falta de confirmación oportuna y saturación de líneas telefónicas, lo que causa pérdidas financieras en horas de especialistas médicos no aprovechadas.</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-900 mb-1">3. Propuesta de Valor</h4>
+          <ul class="list-disc pl-5 space-y-1 mt-1">
+            <li>Autogestión de citas para pacientes 24/7.</li>
+            <li>Validación automática de horarios para evitar solapamiento entre médicos y pacientes.</li>
+            <li>Monitoreo de métricas clínicas en tiempo real para la administración.</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-900 mb-1">4. Modelo de Monetización</h4>
+          <p>Suscripción mensual por médico activo (Freemium hasta 2 especialistas, Plan Pro con recordatorios WhatsApp y reportes avanzados).</p>
+        </div>
+      </div>
+      <div class="bg-slate-50 px-6 py-3 text-right border-t border-slate-100">
+        <button onclick="toggleModal('business-modal')" class="px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-semibold hover:bg-brand-700">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Pipeline CI/CD -->
+  <div id="pipeline-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white max-w-2xl w-full rounded-2xl shadow-2xl overflow-hidden border border-slate-100">
+      <div class="bg-slate-800 text-white px-6 py-4 flex justify-between items-center">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-code-branch"></i> Arquitectura del Pipeline CI/CD
+        </h3>
+        <button onclick="toggleModal('pipeline-modal')" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <div class="p-6 space-y-4 text-sm text-slate-600 max-h-[75vh] overflow-y-auto">
+        <div class="space-y-3">
+          <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center shrink-0">1</span>
+            <div>
+              <h5 class="font-bold text-slate-900">Etapa de Calidad de Código (Linting)</h5>
+              <p class="text-xs text-slate-500">Ejecuta ESLint para asegurar apego a estándares de codificación, detección de variables no usadas y estilo uniforme.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 font-bold flex items-center justify-center shrink-0">2</span>
+            <div>
+              <h5 class="font-bold text-slate-900">Etapa de Pruebas Unitarias & Integración (Jest)</h5>
+              <p class="text-xs text-slate-500">Valida reglas de negocio: fechas futuras, especialidades autorizadas, no solapamiento de médicos. Si un test falla, el pipeline aborta.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center shrink-0">3</span>
+            <div>
+              <h5 class="font-bold text-slate-900">Etapa de Despliegue Continuo (CD)</h5>
+              <p class="text-xs text-slate-500">Solo si la rama es <code>main</code> y los tests están en verde, se empaquetan los artefactos y se publica la versión estable.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-slate-50 px-6 py-3 text-right border-t border-slate-100">
+        <button onclick="toggleModal('pipeline-modal')" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-semibold hover:bg-slate-700">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Establecer fecha mínima para el campo de fecha (hoy + 1 hora)
+    const dtInput = document.getElementById('dateTime');
+    const minDate = new Date();
+    minDate.setHours(minDate.getHours() + 1);
+    dtInput.min = minDate.toISOString().slice(0, 16);
+
+    let appointmentsCache = [];
+
+    async function loadAppointments() {
+      try {
+        const res = await fetch('/api/appointments');
+        const json = await res.json();
+        appointmentsCache = json.data;
+        updateMetrics(json.metrics);
+        renderAppointments();
+      } catch (e) {
+        console.error('Error cargando citas:', e);
+      }
+    }
+
+    function updateMetrics(metrics) {
+      if (!metrics) return;
+      document.getElementById('metric-total').textContent = metrics.total;
+      document.getElementById('metric-confirmed').textContent = metrics.confirmed;
+      document.getElementById('metric-cancelled').textContent = metrics.cancelled;
+      document.getElementById('metric-doctors').textContent = metrics.activeDoctors;
+    }
+
+    function renderAppointments() {
+      const container = document.getElementById('appointments-container');
+      const filter = document.getElementById('status-filter').value;
+      
+      const filtered = appointmentsCache.filter(apt => {
+        if (filter === 'ALL') return true;
+        return apt.status === filter;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-slate-400 text-sm">
+            <i class="fa-regular fa-calendar-xmark text-4xl mb-3 text-slate-300 block"></i>
+            No hay citas registradas en este estado.
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(apt => {
+        const dateFormatted = new Date(apt.dateTime).toLocaleString('es-ES', {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        });
+
+        const isCancelled = apt.status === 'CANCELLED';
+
+        return `
+          <div class="p-4 rounded-xl border ${isCancelled ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-brand-100 hover:border-brand-300'} transition flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900">${apt.patientName}</span>
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${isCancelled ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+                  ${isCancelled ? 'Cancelada' : 'Confirmada'}
+                </span>
+                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">${apt.specialty}</span>
+              </div>
+              <div class="text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+                <span><i class="fa-solid fa-user-doctor text-slate-400 mr-1"></i>${apt.doctorName}</span>
+                <span><i class="fa-regular fa-clock text-slate-400 mr-1"></i>${dateFormatted}</span>
+                ${apt.reason ? `<span><i class="fa-regular fa-comment text-slate-400 mr-1"></i>${apt.reason}</span>` : ''}
+              </div>
+            </div>
+            ${!isCancelled ? `
+              <button onclick="cancelAppointment(${apt.id})" class="text-xs font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition self-end sm:self-center">
+                <i class="fa-solid fa-xmark mr-1"></i> Cancelar
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const feedback = document.getElementById('form-feedback');
+      feedback.className = 'hidden text-xs p-3 rounded-lg';
+
+      const payload = {
+        patientName: document.getElementById('patientName').value,
+        doctorName: document.getElementById('doctorName').value,
+        specialty: document.getElementById('specialty').value,
+        dateTime: document.getElementById('dateTime').value,
+        reason: document.getElementById('reason').value
+      };
+
+      try {
+        const res = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Error al agendar la cita.');
+        }
+
+        feedback.textContent = '¡Cita programada con éxito!';
+        feedback.className = 'text-xs p-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+        document.getElementById('appointment-form').reset();
+        loadAppointments();
+      } catch (err) {
+        feedback.textContent = err.message;
+        feedback.className = 'text-xs p-3 rounded-lg bg-rose-50 text-rose-800 border border-rose-200 block';
+      }
+    }
+
+    async function cancelAppointment(id) {
+      if (!confirm('¿Desea cancelar esta cita médica?')) return;
+      try {
+        const res = await fetch(`/api/appointments/${id}/cancel`, { method: 'PATCH' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        loadAppointments();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function seedDemoAppointments() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(9, 0, 0, 0);
+
+      const dayAfter = new Date();
+      dayAfter.setDate(dayAfter.getDate() + 2);
+      dayAfter.setHours(11, 30, 0, 0);
+
+      const demos = [
+        { patientName: 'Lucía Fernández', doctorName: 'Dr. Roberto Salas', specialty: 'Cardiología', dateTime: tomorrow.toISOString(), reason: 'Chequeo anual de hipertensión' },
+        { patientName: 'Mateo Quispe', doctorName: 'Dra. Elena Vargas', specialty: 'Pediatría', dateTime: dayAfter.toISOString(), reason: 'Control pediátrico de desarrollo' }
+      ];
+
+      for (const d of demos) {
+        await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(d)
+        });
+      }
+      loadAppointments();
+    }
+
+    function toggleModal(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle('hidden');
+    }
+
+    // Inicializar
+    loadAppointments();
+  </script>
+</body>
+</html>

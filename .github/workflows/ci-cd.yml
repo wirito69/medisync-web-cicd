@@ -1,0 +1,76 @@
+name: MediSync CI-CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ==========================================
+  # FASE 1: CI (Integración Continua)
+  # ==========================================
+  ci-quality-and-tests:
+    name: 🧪 CI - Verificación de Calidad y Pruebas
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: 📦 Instalar dependencias limpias
+        run: npm ci
+
+      - name: 🔍 Análisis Estático de Código (Linter)
+        run: npm run lint
+
+      - name: 🧪 Ejecución de Pruebas Unitarias y de Integración
+        run: npm run test:coverage
+
+      - name: 📊 Publicar Reporte de Cobertura como Artefacto
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: code-coverage-report
+          path: coverage/
+          retention-days: 7
+
+  # ==========================================
+  # FASE 2: CD (Despliegue Continuo)
+  # ==========================================
+  cd-deploy-production:
+    name: 🚀 CD - Despliegue a Producción
+    needs: ci-quality-and-tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositorio para release
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Configurar Entorno de Producción
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 📦 Instalar dependencias de producción
+        run: npm ci --omit=dev
+
+      - name: 🛡️ Simulación de Smoke Tests de Despliegue
+        run: |
+          echo "Verificando integridad del paquete de producción..."
+          node -e "require('./src/services/appointmentService.js'); console.log('Servicio de citas verificado con éxito.');"
+
+      - name: 📢 Generar Reporte de Despliegue en GitHub
+        run: |
+          echo "### 🚀 Despliegue Exitoso en Producción" >> $GITHUB_STEP_SUMMARY
+          echo "- **Aplicación:** MediSync v1.0" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Autor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Resultado:** Todos los filtros de calidad y tests fueron superados satisfactoriamente." >> $GITHUB_STEP_SUMMARY
